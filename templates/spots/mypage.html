@@ -16,7 +16,16 @@
           {% else %}
             <span class="status-badge status-approved">承認済み</span>
           {% endif %}
-          <div style="margin-top:6px;"><a href="{% url 'spots:detail' spot.id %}">詳細を見る →</a></div>
+          <div style="margin-top:6px; display:flex; gap:12px; align-items:center;">
+            <a href="{% url 'spots:detail' spot.id %}">詳細を見る →</a>
+            {% if user.role == 'business' or user.role == 'admin' %}
+              <form method="post" action="{% url 'spots:delete' spot.id %}"
+                    onsubmit="return confirm('「{{ spot.name }}」を削除します。よろしいですか？（元に戻せません）');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger" style="padding:3px 10px; font-size:.75rem;">削除</button>
+              </form>
+            {% endif %}
+          </div>
         </div>
       {% endfor %}
     {% else %}

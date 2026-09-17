@@ -17,6 +17,9 @@ class SpotFlowTests(TestCase):
         self.admin = User.objects.create_user(
             username="adm", email="adm@example.com", password="pass12345", role=User.Role.ADMIN, is_staff=True
         )
+        self.other_business = User.objects.create_user(
+            username="biz2", email="biz2@example.com", password="pass12345", role=User.Role.BUSINESS
+        )
         self.food_category, _ = Category.objects.get_or_create(
             name="安い飯屋",
             defaults={"icon_class": "🍜", "color": "#D97706", "student_registrable": False},
@@ -115,6 +118,81 @@ class SpotFlowTests(TestCase):
 
         self.client.post(url, {"rating": 3, "comment_text": "二回目"})
         self.assertEqual(Comment.objects.filter(spot=spot, user=self.student).count(), 1)
+
+    def test_business_can_delete_own_spot(self):
+        spot = Spot.objects.create(
+            name="自分のスポット",
+            address="住所",
+            latitude="36.0",
+            longitude="140.0",
+            category=self.food_category,
+            registered_by=self.business,
+            status=Spot.Status.APPROVED,
+        )
+        self.client.login(username="biz", password="pass12345")
+        response = self.client.post(reverse("spots:delete", args=[spot.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Spot.objects.filter(id=spot.id).exists())
+
+    def test_business_cannot_delete_others_spot(self):
+        spot = Spot.objects.create(
+            name="他人のスポット",
+            address="住所",
+            latitude="36.0",
+            longitude="140.0",
+            category=self.food_category,
+            registered_by=self.other_business,
+            status=Spot.Status.APPROVED,
+        )
+        self.client.login(username="biz", password="pass12345")
+        response = self.client.post(reverse("spots:delete", args=[spot.id]))
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Spot.objects.filter(id=spot.id).exists())
+
+    def test_student_cannot_delete_any_spot(self):
+        spot = Spot.objects.create(
+            name="削除対象外",
+            address="住所",
+            latitude="36.0",
+            longitude="140.0",
+            category=self.atm_category,
+            registered_by=self.student,
+            status=Spot.Status.APPROVED,
+        )
+        self.client.login(username="stu", password="pass12345")
+        response = self.client.post(reverse("spots:delete", args=[spot.id]))
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Spot.objects.filter(id=spot.id).exists())
+
+    def test_anonymous_delete_redirects_to_login(self):
+        spot = Spot.objects.create(
+            name="未ログインテスト",
+            address="住所",
+            latitude="36.0",
+            longitude="140.0",
+            category=self.food_category,
+            registered_by=self.business,
+            status=Spot.Status.APPROVED,
+        )
+        response = self.client.post(reverse("spots:delete", args=[spot.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response.url)
+        self.assertTrue(Spot.objects.filter(id=spot.id).exists())
+
+    def test_admin_can_delete_any_spot(self):
+        spot = Spot.objects.create(
+            name="管理者が消せるスポット",
+            address="住所",
+            latitude="36.0",
+            longitude="140.0",
+            category=self.food_category,
+            registered_by=self.business,
+            status=Spot.Status.APPROVED,
+        )
+        self.client.login(username="adm", password="pass12345")
+        response = self.client.post(reverse("spots:delete", args=[spot.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Spot.objects.filter(id=spot.id).exists())
 
     def test_admin_bulk_approve_action(self):
         spot = Spot.objects.create(

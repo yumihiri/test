@@ -16,11 +16,13 @@ def geocode_address(address):
         response = requests.get(
             settings.GSI_GEOCODE_URL,
             params={"q": address},
-            timeout=5,
+            timeout=10,
         )
         response.raise_for_status()
     except requests.RequestException as exc:
-        raise GeocodingError(f"ジオコーディングAPIへの接続に失敗しました: {exc}") from exc
+        raise GeocodingError(
+            "ジオコーディングAPIの応答がありませんでした。地図をクリックして手動でピンを指定してください。"
+        ) from exc
 
     results = response.json()
     if not results:
@@ -41,11 +43,13 @@ def reverse_geocode(lat, lng):
         response = requests.get(
             "https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress",
             params={"lon": lng, "lat": lat},
-            timeout=5,
+            timeout=10,
         )
         response.raise_for_status()
     except requests.RequestException as exc:
-        raise GeocodingError(f"逆ジオコーディングAPIへの接続に失敗しました: {exc}") from exc
+        raise GeocodingError(
+            "逆ジオコーディングAPIの応答がありませんでした。住所は手動で入力してください。"
+        ) from exc
 
     data = response.json()
     result = data.get("results")

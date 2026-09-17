@@ -1,11 +1,11 @@
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Avg
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
-from django.views.generic import CreateView, DetailView, ListView, TemplateView
+from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView
 
 from .forms import SpotForm
 from .geocoding import GeocodingError, geocode_address, reverse_geocode
@@ -78,6 +78,7 @@ class SpotDetailView(DetailView):
             context["already_reviewed"] = spot.comments.filter(
                 user=self.request.user
             ).exists()
+        context["can_delete"] = spot.can_be_deleted_by(self.request.user)
         return context
 
 
@@ -97,6 +98,25 @@ class SpotCreateView(LoginRequiredMixin, CreateView):
         form.instance.status = Spot.Status.PENDING
         messages.success(self.request, "スポットを登録しました。管理者の承認をお待ちください。")
         return super().form_valid(form)
+
+
+class SpotDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    model = Spot
+    success_url = reverse_lazy("spots:mypage")
+    http_method_names = ["post"]
+
+    def test_func(self):
+        return self.get_object().can_be_deleted_by(self.request.user)
+
+    def handle_no_permission(self):
+        if not self.request.user.is_authenticated:
+            return super().handle_no_permission()
+        raise Http404("スポットが見つかりません")
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        messages.success(request, "スポットを削除しました。")
+        return response
 
 
 class MyPageView(LoginRequiredMixin, ListView):

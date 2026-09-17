@@ -68,3 +68,10 @@ class Spot(models.Model):
         if user.role == "admin":
             return True
         return self.registered_by_id == user.id
+
+    def can_be_deleted_by(self, user):
+        if not user.is_authenticated:
+            return False
+        if user.role == "admin":
+            return True
+        return user.role == "business" and self.registered_by_id == user.id

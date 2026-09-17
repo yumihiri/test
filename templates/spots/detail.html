@@ -56,6 +56,14 @@
       {% endfor %}
     </div>
 
+    {% if can_delete %}
+      <form method="post" action="{% url 'spots:delete' spot.id %}" style="margin-top:20px;"
+            onsubmit="return confirm('このスポットを削除します。よろしいですか？（元に戻せません）');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">このスポットを削除する</button>
+      </form>
+    {% endif %}
+
     <p style="margin-top:20px;"><a href="{% url 'spots:map' %}">← 地図に戻る</a></p>
   </section>
 </div>
