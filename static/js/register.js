@@ -32,12 +32,17 @@
     })
       .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
       .then(({ ok, data }) => {
-        if (!ok || !addressInput.value.trim()) return;
+        if (!ok) {
+          geocodeMessage.textContent = data.error || '住所の自動入力に失敗しました。手動で入力してください。';
+          return;
+        }
+        // レスポンス待ちの間にユーザーが手入力していた場合は上書きしない
+        if (addressInput.value.trim()) return;
         addressInput.value = data.address;
         geocodeMessage.textContent = `住所の目安を自動入力しました（${data.address}）。番地などは手動で補ってください。`;
       })
       .catch(() => {
-        // 逆ジオコーディングは補助機能のため、失敗しても登録自体は続行できる
+        geocodeMessage.textContent = '通信エラーのため住所を自動入力できませんでした。手動で入力してください。';
       });
   }
 
