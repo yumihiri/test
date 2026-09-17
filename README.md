@@ -21,6 +21,14 @@ python manage.py runserver
 - **経営者（business）**: 全カテゴリのスポット登録が可能。
 - **管理者（admin）**: Django Admin（`/admin/`）からスポットの承認・却下を行う。新規登録画面からは作成できず、`createsuperuser`または既存管理者が手動で作成する。
 
+## 地図タイル
+
+地図タイルはOpenStreetMap公式サーバーではなく、CARTO Voyagerタイル
+（`basemaps.cartocdn.com`）を利用している。OSM公式タイルサーバーは
+利用ポリシー（Refererヘッダーの検証など）が厳しく、開発環境によっては
+「403 Access blocked」でタイルが表示されないことがあるため。
+地図データ自体はOpenStreetMapのものであり、帰属表示はOSMとCARTO両方に行っている。
+
 ## ジオコーディング
 
 スポット登録時の住所→緯度経度変換には、国土地理院 AddressSearch API

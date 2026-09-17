@@ -3,10 +3,10 @@
   const config = window.SPOT_REGISTER_CONFIG;
 
   const map = L.map('map', { zoomControl: true }).setView(CENTER, 14);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    maxZoom: 20,
     attribution:
-      '地図データ: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      '地図データ: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
   }).addTo(map);
 
   const latInput = document.getElementById('id_latitude');
