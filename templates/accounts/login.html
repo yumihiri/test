@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}ログイン | 学生生活マップ{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h1>ログイン</h1>
+    {% if form.non_field_errors %}
+      <div class="error-text">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {{ field.errors }}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary">ログイン</button>
+    </form>
+    <p class="desc" style="margin-top:16px;">アカウントをお持ちでない方は <a href="{% url 'accounts:signup' %}">会員登録</a></p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ spot.name }} | 学生生活マップ{% endblock %}
+{% block content %}
+<div class="layout">
+  <section class="panel" style="width:100%; max-width:640px; margin:24px auto; border-left:none;">
+    <span class="cat-dot" style="background:{{ spot.category.color }}">{{ spot.category.icon_class }}</span> {{ spot.category.name }}
+    <h2>{{ spot.name }}</h2>
+    {% if spot.status == 'pending' %}<span class="status-badge status-pending">承認待ち</span>{% endif %}
+    {% if spot.status == 'rejected' %}<span class="status-badge status-rejected">却下</span>{% endif %}
+    <p class="desc">住所: {{ spot.address }}</p>
+    <p class="desc">{{ spot.description|default:"（説明なし）" }}</p>
+    {% if spot.image %}<img src="{{ spot.image.url }}" alt="{{ spot.name }}" style="width:100%;border-radius:8px;margin-bottom:12px;">{% endif %}
+
+    <div class="avg-rating">
+      {% if avg_rating %}平均評価 ★{{ avg_rating|floatformat:1 }}（{{ reviews|length }}件）{% else %}評価はまだありません{% endif %}
+    </div>
+
+    {% if spot.status == 'approved' %}
+      {% if user.is_authenticated %}
+        {% if already_reviewed %}
+          <p class="hint">このスポットには既に評価を投稿済みです。</p>
+        {% else %}
+          <form method="post" action="{% url 'reviews:submit' spot.id %}">
+            {% csrf_token %}
+            <div class="field">
+              <label>評価</label>
+              <select name="rating" class="form-control">
+                <option value="5">★★★★★（5）</option>
+                <option value="4">★★★★☆（4）</option>
+                <option value="3">★★★☆☆（3）</option>
+                <option value="2">★★☆☆☆（2）</option>
+                <option value="1">★☆☆☆☆（1）</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>コメント（任意）</label>
+              <textarea name="comment_text" class="form-control" rows="3" placeholder="使ってみた感想を書く"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">投稿する</button>
+          </form>
+        {% endif %}
+      {% else %}
+        <p class="hint">コメントを投稿するには<a href="{% url 'accounts:login' %}">ログイン</a>が必要です。</p>
+      {% endif %}
+    {% endif %}
+
+    <div style="margin-top:16px;">
+      {% for review in reviews %}
+        <div class="review">
+          <div class="stars">{% for i in "12345" %}{% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}{% endfor %}</div>
+          <div>{{ review.comment_text|default:"（コメントなし）" }}</div>
+          <div class="author">{{ review.user.username }}</div>
+        </div>
+      {% empty %}
+        <p class="desc">まだコメントがありません。</p>
+      {% endfor %}
+    </div>
+
+    <p style="margin-top:20px;"><a href="{% url 'spots:map' %}">← 地図に戻る</a></p>
+  </section>
+</div>
+{% endblock %}

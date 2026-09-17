@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}スポットを登録 | 学生生活マップ{% endblock %}
+{% block content %}
+<div class="layout">
+  <section class="panel" style="width:380px; border-left:none; border-right:1px solid var(--border);">
+    <h2>スポットを登録</h2>
+    <p class="hint">住所を入力して「住所から検索」を押すと地図上にピンが立ちます。位置がずれている場合は地図を直接クリックして調整してください。</p>
+
+    {% if form.non_field_errors %}
+      <div class="error-text">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" id="spot-form">
+      {% csrf_token %}
+      <div class="field">
+        <label for="{{ form.name.id_for_label }}">スポット名</label>
+        {{ form.name }}
+        {{ form.name.errors }}
+      </div>
+      <div class="field">
+        <label for="{{ form.address.id_for_label }}">住所</label>
+        {{ form.address }}
+        {{ form.address.errors }}
+        <button type="button" class="btn" id="geocode-btn">住所から検索</button>
+        <div id="geocode-message" class="desc"></div>
+      </div>
+      <div class="field">
+        <label for="{{ form.category.id_for_label }}">カテゴリ</label>
+        {{ form.category }}
+        {{ form.category.errors }}
+      </div>
+      <div class="field">
+        <label for="{{ form.description.id_for_label }}">説明</label>
+        {{ form.description }}
+        {{ form.description.errors }}
+      </div>
+      <div class="field">
+        <label for="{{ form.image.id_for_label }}">画像（任意）</label>
+        {{ form.image }}
+        {{ form.image.errors }}
+      </div>
+      <div class="field">
+        <label>位置</label>
+        <div id="loc-text" class="desc">未設定 — 住所検索、または地図をクリックして位置を指定してください</div>
+        {{ form.latitude }}
+        {{ form.longitude }}
+        {{ form.latitude.errors }}
+        {{ form.longitude.errors }}
+      </div>
+      <button type="submit" class="btn btn-primary" id="submit-btn" disabled>この内容で登録する（承認待ちになります）</button>
+    </form>
+  </section>
+  <div id="map"></div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  window.SPOT_REGISTER_CONFIG = {
+    geocodeUrl: "{% url 'spots:geocode' %}",
+    csrfToken: "{{ csrf_token }}",
+  };
+</script>
+<script src="{% static 'js/register.js' %}"></script>
+{% endblock %}

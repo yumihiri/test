@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <h2>カテゴリで絞り込み</h2>
+    <ul class="cat-list" id="cat-list"></ul>
+    <div class="legend">
+      <div><span class="legend-swatch" style="background:#2F6F4E"></span>承認済み</div>
+      <div><span class="legend-swatch pending" style="background:#B3541E"></span>承認待ち（本人・管理者のみ表示）</div>
+      <div><span class="legend-swatch rejected" style="background:#999"></span>却下（本人・管理者のみ表示）</div>
+    </div>
+  </aside>
+  <div id="map"></div>
+</div>
+
+{{ categories_json|json_script:"categories-data" }}
+{{ spots_json|json_script:"spots-data" }}
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'js/map.js' %}"></script>
+{% endblock %}

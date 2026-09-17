@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学生生活マップ（プロトタイプ）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<style>
+/* ===== 最低限のLeaflet用CSS（画像アセットに依存する部分は除外） ===== */
+.leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile-container,
+.leaflet-pane > svg,.leaflet-pane > canvas,.leaflet-zoom-box,.leaflet-image-layer,.leaflet-layer{
+  position:absolute;left:0;top:0;
+}
+.leaflet-container{overflow:hidden;position:relative;outline:none;background:#dde3d8;}
+.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow{user-select:none;-webkit-user-drag:none;}
+.leaflet-marker-icon,.leaflet-marker-shadow{display:block;}
+.leaflet-container .leaflet-tile-pane img,.leaflet-container .leaflet-marker-pane img,.leaflet-container .leaflet-tile{
+  max-width:none!important;max-height:none!important;
+}
+.leaflet-tile{filter:inherit;visibility:hidden;}
+.leaflet-tile-loaded{visibility:inherit;}
+.leaflet-pane{z-index:400;} .leaflet-tile-pane{z-index:200;} .leaflet-overlay-pane{z-index:400;}
+.leaflet-shadow-pane{z-index:500;} .leaflet-marker-pane{z-index:600;} .leaflet-popup-pane{z-index:700;}
+.leaflet-control{position:relative;z-index:800;pointer-events:auto;}
+.leaflet-top,.leaflet-bottom{position:absolute;z-index:1000;pointer-events:none;}
+.leaflet-top{top:0;} .leaflet-right{right:0;} .leaflet-bottom{bottom:0;} .leaflet-left{left:0;}
+.leaflet-control{float:left;clear:both;margin:10px;}
+.leaflet-right .leaflet-control{float:right;}
+.leaflet-interactive{cursor:pointer;}
+.leaflet-grab{cursor:grab;}
+.leaflet-dragging .leaflet-grab{cursor:grabbing;}
+.leaflet-container a{color:#2F6F4E;}
+.leaflet-bar{box-shadow:0 1px 5px rgba(0,0,0,.35);border-radius:8px;overflow:hidden;}
+.leaflet-bar a{background:#fff;border-bottom:1px solid #e2e2e2;width:30px;height:30px;line-height:30px;display:block;text-align:center;text-decoration:none;color:#22281D;font:bold 16px/30px system-ui;}
+.leaflet-bar a:last-child{border-bottom:none;}
+.leaflet-bar a:hover{background:#f2f5ef;}
+.leaflet-control-attribution{background:rgba(255,255,255,.85);padding:2px 8px;font-size:11px;border-radius:6px 0 0 0;color:#333;}
+.leaflet-control-attribution a{text-decoration:none;}
+
+/* ===== デザイントークン ===== */
+:root{
+  --bg:#F5F7F2; --surface:#FFFFFF; --ink:#22281D; --ink-soft:#5B6355;
+  --border:#DCE3D6; --accent:#2F6F4E; --accent-hover:#24543C; --accent-soft:#E4EEE7;
+  --warn:#B3541E; --danger:#B3261E; --panel-w:340px; --sidebar-w:250px;
+  --font-display:'Shippori Mincho',serif; --font-body:'Zen Kaku Gothic New',sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1B211A; --surface:#232B21; --ink:#E9EDE4; --ink-soft:#AEB8A6;
+    --border:#384033; --accent:#6FB88C; --accent-hover:#8ECCA6; --accent-soft:#2A3A2E;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1B211A; --surface:#232B21; --ink:#E9EDE4; --ink-soft:#AEB8A6;
+  --border:#384033; --accent:#6FB88C; --accent-hover:#8ECCA6; --accent-soft:#2A3A2E;
+}
+*{box-sizing:border-box;}
+html,body{height:100%;margin:0;}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--font-body);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.app-header{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:10px 18px; background:var(--surface); border-bottom:1px solid var(--border); flex:0 0 auto;
+}
+.brand{display:flex; align-items:baseline; gap:10px;}
+.brand .title{font-family:var(--font-display); font-weight:800; font-size:1.25rem; letter-spacing:.02em;}
+.brand .subtitle{font-size:.75rem; color:var(--ink-soft);}
+.role-area{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.btn{
+  font-family:var(--font-body); font-size:.85rem; padding:7px 14px; border-radius:7px;
+  border:1px solid var(--border); background:var(--surface); color:var(--ink); cursor:pointer;
+  transition:background .15s ease, color .15s ease, border-color .15s ease;
+}
+.btn:hover{background:var(--accent-soft);}
+.btn-primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+.btn-primary:hover{background:var(--accent-hover); border-color:var(--accent-hover);}
+.btn-ghost{background:transparent; border-color:transparent; color:var(--ink-soft);}
+.btn-ghost:hover{background:var(--accent-soft); color:var(--ink);}
+.btn-danger{border-color:var(--danger); color:var(--danger); background:transparent;}
+.btn-danger:hover{background:var(--danger); color:#fff;}
+.btn:disabled{opacity:.45; cursor:not-allowed;}
+.role-badge{
+  font-size:.78rem; padding:5px 10px; border-radius:999px; background:var(--accent-soft); color:var(--accent-hover);
+  font-weight:700; border:1px solid var(--border);
+}
+.demo-banner{
+  background:var(--accent-soft); color:var(--accent-hover); font-size:.75rem; text-align:center;
+  padding:5px; border-bottom:1px solid var(--border); flex:0 0 auto;
+}
+.layout{flex:1; display:flex; min-height:0; position:relative;}
+.sidebar{
+  width:var(--sidebar-w); flex:0 0 auto; background:var(--surface); border-right:1px solid var(--border);
+  padding:16px 14px; overflow-y:auto;
+}
+.sidebar h2{font-family:var(--font-display); font-size:.95rem; margin:0 0 10px;}
+.cat-list{list-style:none; margin:0 0 20px; padding:0; display:flex; flex-direction:column; gap:6px;}
+.cat-list li{display:flex; align-items:center; gap:8px; font-size:.85rem;}
+.cat-dot{width:14px; height:14px; border-radius:50%; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; font-size:9px;}
+.sidebar-section{border-top:1px solid var(--border); padding-top:14px; margin-top:14px; display:flex; flex-direction:column; gap:8px;}
+.sidebar-section .role-tag{font-size:.7rem; color:var(--ink-soft); font-weight:700; letter-spacing:.03em;}
+.legend{font-size:.72rem; color:var(--ink-soft); display:flex; flex-direction:column; gap:4px; margin-top:16px; border-top:1px solid var(--border); padding-top:12px;}
+.legend-swatch{display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:6px; vertical-align:middle; background:#999; border:2px solid #fff; box-shadow:0 0 0 1px #ccc;}
+.legend-swatch.pending{border-style:dashed;}
+.legend-swatch.rejected{filter:grayscale(1); opacity:.6;}
+#map{flex:1; min-width:0;}
+.spot-marker{
+  width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:15px; color:#fff; border:2px solid #fff; box-shadow:0 1px 5px rgba(0,0,0,.35);
+}
+.spot-marker.pending{border-style:dashed; opacity:.9;}
+.spot-marker.rejected{filter:grayscale(1); opacity:.55;}
+.panel{
+  width:var(--panel-w); flex:0 0 auto; background:var(--surface); border-left:1px solid var(--border);
+  padding:18px; overflow-y:auto; transform:translateX(100%); transition:transform .2s ease;
+  position:absolute; right:0; top:0; bottom:0;
+}
+.panel.open{transform:translateX(0);}
+.panel h2{font-family:var(--font-display); font-size:1.05rem; margin:0 0 4px;}
+.panel .status-badge{display:inline-block; font-size:.72rem; padding:3px 9px; border-radius:999px; margin-bottom:10px; font-weight:700;}
+.status-approved{background:var(--accent-soft); color:var(--accent-hover);}
+.status-pending{background:#FBEEDC; color:var(--warn);}
+.status-rejected{background:#F7DCDA; color:var(--danger);}
+.panel p.desc{font-size:.85rem; line-height:1.6; color:var(--ink-soft);}
+.field{display:flex; flex-direction:column; gap:5px; margin-bottom:12px;}
+.field label{font-size:.78rem; font-weight:700; color:var(--ink-soft);}
+.field input, .field select, .field textarea{
+  font-family:var(--font-body); font-size:.88rem; padding:8px 10px; border-radius:6px;
+  border:1px solid var(--border); background:var(--bg); color:var(--ink);
+}
+.field textarea{resize:vertical; min-height:64px;}
+.review{border-top:1px solid var(--border); padding:10px 0; font-size:.82rem;}
+.review .stars{color:#D97706; font-size:.85rem;}
+.review .author{color:var(--ink-soft); font-size:.72rem; margin-top:2px;}
+.close-x{position:absolute; top:14px; right:14px; background:none; border:none; font-size:1.1rem; cursor:pointer; color:var(--ink-soft);}
+.avg-rating{font-size:.85rem; margin-bottom:8px; color:var(--ink-soft);}
+.hint{font-size:.75rem; color:var(--accent-hover); background:var(--accent-soft); padding:8px 10px; border-radius:6px; margin-bottom:12px;}
+.mypage-row, .queue-row{border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:10px;}
+.mypage-row .name, .queue-row .name{font-weight:700; font-size:.88rem; margin-bottom:4px;}
+.queue-actions{display:flex; gap:8px; margin-top:8px;}
+.welcome-overlay{
+  position:fixed; inset:0; background:rgba(20,26,18,.55); display:flex; align-items:center; justify-content:center; z-index:2000;
+}
+.welcome-card{
+  background:var(--surface); border-radius:14px; padding:36px 32px; max-width:420px; width:90%;
+  box-shadow:0 10px 40px rgba(0,0,0,.25);
+}
+.welcome-card h1{font-family:var(--font-display); font-size:1.5rem; margin:0 0 6px;}
+.welcome-card p.lead{font-size:.85rem; color:var(--ink-soft); margin:0 0 22px; line-height:1.6;}
+.welcome-roles{display:flex; flex-direction:column; gap:10px;}
+.welcome-roles button{
+  font-family:var(--font-body); font-size:.92rem; padding:12px 16px; border-radius:9px; border:1px solid var(--border);
+  background:var(--bg); text-align:left; cursor:pointer; color:var(--ink);
+}
+.welcome-roles button span.r-title{font-weight:700; display:block;}
+.welcome-roles button span.r-desc{font-size:.75rem; color:var(--ink-soft);}
+.welcome-roles button:hover{border-color:var(--accent); background:var(--accent-soft);}
+.welcome-note{font-size:.7rem; color:var(--ink-soft); margin-top:18px; line-height:1.5;}
+@media (max-width: 760px){
+  .layout{flex-direction:column;}
+  .sidebar{width:100%; border-right:none; border-bottom:1px solid var(--border); max-height:38vh;}
+  .panel{width:100%;}
+}
+</style>
+</head>
+<body>
+
+<div class="demo-banner">🔧 プロトタイプ版：DB・APIなし。データはこのタブのメモリ上のみ保持され、リロードすると初期状態に戻ります</div>
+
+<header class="app-header">
+  <div class="brand">
+    <span class="title">学生生活マップ</span>
+    <span class="subtitle">水戸市 学生向け便利スポット</span>
+  </div>
+  <div class="role-area" id="role-area"></div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div id="map"></div>
+  <section class="panel" id="panel">
+    <button class="close-x" onclick="closePanel()">✕</button>
+    <div id="panel-body"></div>
+  </section>
+</div>
+
+<div class="welcome-overlay" id="welcome" >
+  <div class="welcome-card">
+    <h1>学生生活マップ</h1>
+    <p class="lead">利用するロールを選んでください。このプロトタイプでは実際のパスワード認証は行わず、ロールを選ぶことでログイン状態を再現します。</p>
+    <div class="welcome-roles">
+      <button onclick="login('student')"><span class="r-title">🎓 学生として利用</span><span class="r-desc">スポットの閲覧・検索・コメント投稿</span></button>
+      <button onclick="login('business')"><span class="r-title">🏪 経営者として利用</span><span class="r-desc">スポット情報の登録</span></button>
+      <button onclick="login('admin')"><span class="r-title">🛡️ 管理者として利用</span><span class="r-desc">登録スポットの承認・却下</span></button>
+    </div>
+    <p class="welcome-note">※ロールは後からヘッダーの「ログアウト」でいつでも切り替えられます。</p>
+  </div>
+</div>
+
+<script>
+/* ===================== データ定義 ===================== */
+const CATEGORIES = [
+  {id:'food',      name:'安い飯屋',        color:'#D97706', emoji:'🍜'},
+  {id:'study',     name:'勉強できる場所',  color:'#2563EB', emoji:'📚'},
+  {id:'print',     name:'印刷できる場所',  color:'#7C3AED', emoji:'🖨️'},
+  {id:'atm',       name:'ATM',             color:'#2F6F4E', emoji:'💴'},
+  {id:'outlet',    name:'コンセントがある店', color:'#DB2777', emoji:'🔌'},
+  {id:'bike',      name:'駐輪場',          color:'#57606A', emoji:'🚲'},
+  {id:'bus',       name:'バス停',          color:'#0EA5E9', emoji:'🚌'},
+  {id:'latenight', name:'深夜営業店',      color:'#1E3A5F', emoji:'🌙'},
+];
+const CENTER = [36.3418, 140.4468]; // 水戸駅付近
+
+let spots = [
+  {id:1, name:'学生食堂 ひだまり（サンプル）', categoryId:'food', lat:36.3432, lng:140.4491,
+   description:'定食が390円から。学生証提示でドリンク1杯無料（デモデータ）。', status:'approved', ownerName:'demo-business',
+   reviews:[{rating:5, text:'安くてボリュームある', author:'学生ユーザー'},{rating:4, text:'夜は混みがち', author:'学生ユーザー2'}]},
+  {id:2, name:'24時間学習室 みなみ（サンプル）', categoryId:'study', lat:36.3455, lng:140.4432,
+   description:'電源・Wi-Fi完備の自習スペース（デモデータ）。', status:'approved', ownerName:'demo-business',
+   reviews:[{rating:5, text:'静かで集中できる', author:'学生ユーザー'}]},
+  {id:3, name:'コンビニ印刷コーナー 駅前（サンプル）', categoryId:'print', lat:36.3398, lng:140.4471,
+   description:'モノクロ10円/枚から（デモデータ）。', status:'approved', ownerName:'demo-business', reviews:[]},
+  {id:4, name:'中央ATMコーナー（サンプル）', categoryId:'atm', lat:36.3441, lng:140.4508,
+   description:'24時間稼働、手数料無料時間帯あり（デモデータ）。', status:'approved', ownerName:'demo-business', reviews:[]},
+  {id:5, name:'カフェ・コンセント席あり（サンプル）', categoryId:'outlet', lat:36.3467, lng:140.4459,
+   description:'全席コンセント付き、長居OK（デモデータ）。', status:'pending', ownerName:'demo-business', reviews:[]},
+  {id:6, name:'駅前第2駐輪場（サンプル）', categoryId:'bike', lat:36.3406, lng:140.4463,
+   description:'1日100円（デモデータ）。', status:'approved', ownerName:'demo-business', reviews:[]},
+  {id:7, name:'水戸駅北口バス停（サンプル）', categoryId:'bus', lat:36.3412, lng:140.4475,
+   description:'市内循環バスが発着（デモデータ）。', status:'approved', ownerName:'demo-business', reviews:[]},
+  {id:8, name:'深夜食堂 よる屋（サンプル）', categoryId:'latenight', lat:36.3479, lng:140.4501,
+   description:'深夜2時まで営業（デモデータ）。', status:'rejected', ownerName:'demo-business', reviews:[]},
+];
+let nextSpotId = 9;
+
+/* ===================== 状態 ===================== */
+let currentRole = null;      // null | 'student' | 'business' | 'admin'
+let currentUserName = '';
+let activeCategories = new Set(CATEGORIES.map(c => c.id));
+let panelMode = null;        // null | 'detail' | 'register' | 'mypage' | 'queue'
+let selectedSpotId = null;
+let isPlacing = false;
+let draftSpot = null;        // {name, categoryId, description, lat, lng}
+let tempMarker = null;
+
+const ROLE_LABEL = {student:'学生', business:'経営者', admin:'管理者'};
+const ROLE_USERNAME = {student:'student-demo', business:'demo-business', admin:'admin-demo'};
+
+/* ===================== 地図初期化 ===================== */
+const map = L.map('map', {zoomControl:true}).setView(CENTER, 14);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom:19,
+  attribution:'地図データ: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(map);
+let markerLayer = L.layerGroup().addTo(map);
+
+map.on('click', (e) => {
+  if (isPlacing) {
+    draftSpot.lat = e.latlng.lat;
+    draftSpot.lng = e.latlng.lng;
+    placeTempMarker(e.latlng);
+    renderPanel();
+  }
+});
+
+function placeTempMarker(latlng){
+  if (tempMarker) map.removeLayer(tempMarker);
+  tempMarker = L.marker(latlng, {icon: L.divIcon({className:'', html:'<div class="spot-marker" style="background:#B3541E">📍</div>', iconSize:[30,30], iconAnchor:[15,15]})}).addTo(map);
+}
+
+/* ===================== マーカー描画 ===================== */
+function categoryOf(id){ return CATEGORIES.find(c => c.id === id); }
+function avgRating(spot){
+  if (!spot.reviews.length) return null;
+  return (spot.reviews.reduce((s,r)=>s+r.rating,0) / spot.reviews.length).toFixed(1);
+}
+function visibleSpots(){
+  return spots.filter(s => {
+    if (!activeCategories.has(s.categoryId)) return false;
+    if (s.status === 'approved') return true;
+    if (currentRole === 'admin') return true;
+    if (currentRole === 'business' && s.ownerName === currentUserName) return true;
+    return false;
+  });
+}
+function renderMarkers(){
+  markerLayer.clearLayers();
+  visibleSpots().forEach(spot => {
+    const cat = categoryOf(spot.categoryId);
+    const cls = spot.status === 'pending' ? 'pending' : (spot.status === 'rejected' ? 'rejected' : '');
+    const html = `<div class="spot-marker ${cls}" style="background:${cat.color}">${cat.emoji}</div>`;
+    const marker = L.marker([spot.lat, spot.lng], {icon: L.divIcon({className:'', html, iconSize:[30,30], iconAnchor:[15,15]})});
+    marker.on('click', () => openDetail(spot.id));
+    marker.addTo(markerLayer);
+  });
+}
+
+/* ===================== ログイン ===================== */
+function login(role){
+  currentRole = role;
+  currentUserName = ROLE_USERNAME[role];
+  document.getElementById('welcome').style.display = 'none';
+  closePanel();
+  renderAll();
+}
+function logout(){
+  currentRole = null;
+  currentUserName = '';
+  document.getElementById('welcome').style.display = 'flex';
+  closePanel();
+  renderAll();
+}
+
+/* ===================== ヘッダー ===================== */
+function renderRoleArea(){
+  const el = document.getElementById('role-area');
+  if (!currentRole){
+    el.innerHTML = `<button class="btn btn-primary" onclick="document.getElementById('welcome').style.display='flex'">ログイン</button>`;
+    return;
+  }
+  el.innerHTML = `<span class="role-badge">${ROLE_LABEL[currentRole]}としてログイン中</span><button class="btn btn-ghost" onclick="logout()">ログアウト</button>`;
+}
+
+/* ===================== サイドバー ===================== */
+function toggleCategory(id){
+  if (activeCategories.has(id)) activeCategories.delete(id); else activeCategories.add(id);
+  renderMarkers();
+}
+function renderSidebar(){
+  const el = document.getElementById('sidebar');
+  let html = `<h2>カテゴリで絞り込み</h2><ul class="cat-list">`;
+  CATEGORIES.forEach(c => {
+    const checked = activeCategories.has(c.id) ? 'checked' : '';
+    html += `<li><input type="checkbox" ${checked} onchange="toggleCategory('${c.id}')">
+      <span class="cat-dot" style="background:${c.color}">${c.emoji}</span> ${c.name}</li>`;
+  });
+  html += `</ul>`;
+
+  if (currentRole === 'business'){
+    html += `<div class="sidebar-section">
+      <div class="role-tag">経営者メニュー</div>
+      <button class="btn btn-primary" onclick="openRegister()">＋ スポットを登録</button>
+      <button class="btn" onclick="openMyPage()">マイページ（登録一覧）</button>
+    </div>`;
+  }
+  if (currentRole === 'admin'){
+    const pendingCount = spots.filter(s => s.status === 'pending').length;
+    html += `<div class="sidebar-section">
+      <div class="role-tag">管理者メニュー</div>
+      <button class="btn btn-primary" onclick="openQueue()">承認待ち一覧（${pendingCount}件）</button>
+    </div>`;
+  }
+
+  html += `<div class="legend">
+    <div><span class="legend-swatch" style="background:#2F6F4E"></span>承認済み</div>
+    <div><span class="legend-swatch pending" style="background:#B3541E"></span>承認待ち（本人・管理者のみ表示）</div>
+    <div><span class="legend-swatch rejected" style="background:#999"></span>却下（本人・管理者のみ表示）</div>
+  </div>`;
+  el.innerHTML = html;
+}
+
+/* ===================== 右パネル ===================== */
+function openPanel(){ document.getElementById('panel').classList.add('open'); }
+function closePanel(){
+  document.getElementById('panel').classList.remove('open');
+  panelMode = null; selectedSpotId = null; isPlacing = false; draftSpot = null;
+  if (tempMarker){ map.removeLayer(tempMarker); tempMarker = null; }
+}
+
+function openDetail(id){
+  panelMode = 'detail'; selectedSpotId = id;
+  openPanel(); renderPanel();
+}
+
+function openRegister(){
+  panelMode = 'register';
+  draftSpot = {name:'', categoryId: CATEGORIES[0].id, description:'', lat:null, lng:null};
+  isPlacing = true;
+  openPanel(); renderPanel();
+}
+
+function openMyPage(){ panelMode = 'mypage'; openPanel(); renderPanel(); }
+function openQueue(){ panelMode = 'queue'; openPanel(); renderPanel(); }
+
+function renderPanel(){
+  const el = document.getElementById('panel-body');
+  if (panelMode === 'detail') el.innerHTML = detailHtml(spots.find(s => s.id === selectedSpotId));
+  else if (panelMode === 'register') el.innerHTML = registerHtml();
+  else if (panelMode === 'mypage') el.innerHTML = myPageHtml();
+  else if (panelMode === 'queue') el.innerHTML = queueHtml();
+}
+
+function statusBadge(status){
+  if (status === 'approved') return '';
+  if (status === 'pending') return `<span class="status-badge status-pending">承認待ち</span>`;
+  return `<span class="status-badge status-rejected">却下</span>`;
+}
+
+function detailHtml(spot){
+  if (!spot) return '';
+  const cat = categoryOf(spot.categoryId);
+  const avg = avgRating(spot);
+  let reviewsHtml = spot.reviews.map(r => `
+    <div class="review">
+      <div class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+      <div>${escapeHtml(r.text)}</div>
+      <div class="author">${escapeHtml(r.author)}</div>
+    </div>`).join('') || '<p class="desc">まだコメントがありません。</p>';
+
+  let formHtml = '';
+  if (currentRole && spot.status === 'approved'){
+    formHtml = `
+      <div class="field"><label>評価</label>
+        <select id="review-rating">
+          <option value="5">★★★★★（5）</option><option value="4">★★★★☆（4）</option>
+          <option value="3">★★★☆☆（3）</option><option value="2">★★☆☆☆（2）</option><option value="1">★☆☆☆☆（1）</option>
+        </select>
+      </div>
+      <div class="field"><label>コメント（任意）</label><textarea id="review-text" placeholder="使ってみた感想を書く"></textarea></div>
+      <button class="btn btn-primary" onclick="submitReview(${spot.id})">投稿する</button>`;
+  } else if (!currentRole){
+    formHtml = `<p class="hint">コメントを投稿するにはログインが必要です。</p>`;
+  }
+
+  return `
+    <span class="cat-dot" style="background:${cat.color}">${cat.emoji}</span> ${cat.name}
+    <h2>${escapeHtml(spot.name)}</h2>
+    ${statusBadge(spot.status)}
+    <p class="desc">${escapeHtml(spot.description)}</p>
+    <div class="avg-rating">${avg ? `平均評価 ★${avg}（${spot.reviews.length}件）` : '評価はまだありません'}</div>
+    ${formHtml}
+    <div style="margin-top:16px;">${reviewsHtml}</div>
+  `;
+}
+
+function submitReview(spotId){
+  const spot = spots.find(s => s.id === spotId);
+  const rating = parseInt(document.getElementById('review-rating').value, 10);
+  const text = document.getElementById('review-text').value.trim();
+  spot.reviews.push({rating, text: text || '（コメントなし）', author: ROLE_LABEL[currentRole] + 'ユーザー'});
+  renderPanel();
+}
+
+function registerHtml(){
+  const options = CATEGORIES.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  const locText = draftSpot.lat
+    ? `緯度 ${draftSpot.lat.toFixed(5)} / 経度 ${draftSpot.lng.toFixed(5)}（設定済み）`
+    : '未設定 — 地図をクリックして位置を指定してください';
+  const canSubmit = draftSpot.name.trim() && draftSpot.lat;
+  return `
+    <h2>スポットを登録</h2>
+    <p class="hint">📍 地図をクリックすると位置ピンを置けます（実際の実装では住所入力からジオコーディングAPIで自動変換）</p>
+    <div class="field"><label>スポット名</label>
+      <input id="reg-name" value="${escapeHtml(draftSpot.name)}" oninput="draftSpot.name=this.value; renderPanel()" placeholder="例：学食 ひだまり">
+    </div>
+    <div class="field"><label>カテゴリ</label>
+      <select id="reg-cat" onchange="draftSpot.categoryId=this.value">${options}</select>
+    </div>
+    <div class="field"><label>説明</label>
+      <textarea id="reg-desc" oninput="draftSpot.description=this.value" placeholder="営業時間や特徴など"></textarea>
+    </div>
+    <div class="field"><label>位置</label><div style="font-size:.82rem; color:var(--ink-soft)">${locText}</div></div>
+    <button class="btn btn-primary" ${canSubmit ? '' : 'disabled'} onclick="submitRegister()">この内容で登録する（承認待ちになります）</button>
+  `;
+}
+
+function submitRegister(){
+  spots.push({
+    id: nextSpotId++, name: draftSpot.name.trim(), categoryId: draftSpot.categoryId,
+    lat: draftSpot.lat, lng: draftSpot.lng, description: draftSpot.description.trim() || '（説明なし）',
+    status: 'pending', ownerName: currentUserName, reviews: []
+  });
+  isPlacing = false;
+  if (tempMarker){ map.removeLayer(tempMarker); tempMarker = null; }
+  renderMarkers();
+  openMyPage();
+}
+
+function myPageHtml(){
+  const mine = spots.filter(s => s.ownerName === currentUserName);
+  if (!mine.length) return `<h2>マイページ</h2><p class="desc">まだ登録したスポットはありません。</p>`;
+  const rows = mine.map(s => `
+    <div class="mypage-row">
+      <div class="name">${escapeHtml(s.name)}</div>
+      ${statusBadge(s.status) || '<span class="status-badge status-approved">承認済み</span>'}
+    </div>`).join('');
+  return `<h2>マイページ（登録一覧）</h2>${rows}`;
+}
+
+function queueHtml(){
+  const pending = spots.filter(s => s.status === 'pending');
+  if (!pending.length) return `<h2>承認待ち一覧</h2><p class="desc">承認待ちのスポットはありません。</p>`;
+  const rows = pending.map(s => {
+    const cat = categoryOf(s.categoryId);
+    return `<div class="queue-row">
+      <div class="name">${cat.emoji} ${escapeHtml(s.name)}</div>
+      <div class="desc" style="margin:4px 0;">${escapeHtml(s.description)}</div>
+      <div class="queue-actions">
+        <button class="btn btn-primary" onclick="reviewSpot(${s.id}, 'approved')">承認</button>
+        <button class="btn btn-danger" onclick="reviewSpot(${s.id}, 'rejected')">却下</button>
+      </div>
+    </div>`;
+  }).join('');
+  return `<h2>承認待ち一覧</h2>${rows}`;
+}
+
+function reviewSpot(id, status){
+  const spot = spots.find(s => s.id === id);
+  spot.status = status;
+  renderMarkers();
+  renderPanel();
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function renderAll(){
+  renderRoleArea();
+  renderSidebar();
+  renderMarkers();
+}
+renderAll();
+</script>
+</body>
+</html>

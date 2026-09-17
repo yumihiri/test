@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}マイページ | 学生生活マップ{% endblock %}
+{% block content %}
+<div class="layout">
+  <section class="panel" style="width:100%; max-width:640px; margin:24px auto; border-left:none;">
+    <h2>マイページ（登録一覧）</h2>
+    {% if spots %}
+      {% for spot in spots %}
+        <div class="mypage-row">
+          <div class="name">{{ spot.category.icon_class }} {{ spot.name }}</div>
+          {% if spot.status == 'pending' %}
+            <span class="status-badge status-pending">承認待ち</span>
+          {% elif spot.status == 'rejected' %}
+            <span class="status-badge status-rejected">却下</span>
+            {% if spot.reject_reason %}<div class="desc">理由: {{ spot.reject_reason }}</div>{% endif %}
+          {% else %}
+            <span class="status-badge status-approved">承認済み</span>
+          {% endif %}
+          <div style="margin-top:6px;"><a href="{% url 'spots:detail' spot.id %}">詳細を見る →</a></div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="desc">まだ登録したスポットはありません。</p>
+    {% endif %}
+    <p style="margin-top:20px;"><a href="{% url 'spots:register' %}">＋ 新しいスポットを登録する</a></p>
+  </section>
+</div>
+{% endblock %}
