@@ -8,6 +8,7 @@ class User(AbstractUser):
         BUSINESS = "business", "経営者"
         ADMIN = "admin", "管理者"
 
+    email = models.EmailField("email address", unique=True)
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.STUDENT)
     icon = models.ImageField(upload_to="user_icons/", blank=True, null=True)
 

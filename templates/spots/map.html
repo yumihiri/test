@@ -14,8 +14,8 @@
   <div id="map"></div>
 </div>
 
-{{ categories_json|json_script:"categories-data" }}
-{{ spots_json|json_script:"spots-data" }}
+{{ categories|json_script:"categories-data" }}
+{{ spots|json_script:"spots-data" }}
 {% endblock %}
 
 {% block extra_scripts %}

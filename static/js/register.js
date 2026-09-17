@@ -3,19 +3,43 @@
   const config = window.SPOT_REGISTER_CONFIG;
 
   const map = L.map('map', { zoomControl: true }).setView(CENTER, 14);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    maxZoom: 20,
+  L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', {
+    maxZoom: 18,
     attribution:
-      '地図データ: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      '地図: <a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>',
   }).addTo(map);
 
   const latInput = document.getElementById('id_latitude');
   const lngInput = document.getElementById('id_longitude');
+  const addressInput = document.getElementById('id_address');
   const locText = document.getElementById('loc-text');
   const submitBtn = document.getElementById('submit-btn');
   const geocodeMessage = document.getElementById('geocode-message');
 
   let marker = null;
+
+  function fillAddressFromPin(lat, lng) {
+    // すでに住所が入力されている場合は上書きしない（手入力を尊重する）
+    if (addressInput.value.trim()) return;
+    const body = new URLSearchParams({ lat, lng });
+    fetch(config.reverseGeocodeUrl, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': config.csrfToken,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: body.toString(),
+    })
+      .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+      .then(({ ok, data }) => {
+        if (!ok || !addressInput.value.trim()) return;
+        addressInput.value = data.address;
+        geocodeMessage.textContent = `住所の目安を自動入力しました（${data.address}）。番地などは手動で補ってください。`;
+      })
+      .catch(() => {
+        // 逆ジオコーディングは補助機能のため、失敗しても登録自体は続行できる
+      });
+  }
 
   function setPosition(lat, lng) {
     latInput.value = lat;
@@ -32,6 +56,7 @@
     map.setView([lat, lng], 16);
     locText.textContent = `緯度 ${Number(lat).toFixed(5)} / 経度 ${Number(lng).toFixed(5)}（設定済み）`;
     submitBtn.disabled = false;
+    fillAddressFromPin(lat, lng);
   }
 
   map.on('click', (e) => {

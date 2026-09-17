@@ -19,6 +19,7 @@
       <button type="submit" class="btn btn-primary">ログイン</button>
     </form>
     <p class="desc" style="margin-top:16px;">アカウントをお持ちでない方は <a href="{% url 'accounts:signup' %}">会員登録</a></p>
+    <p class="desc" style="margin-top:6px;"><a href="{% url 'accounts:password_reset' %}">パスワードをお忘れですか？</a></p>
   </div>
 </div>
 {% endblock %}

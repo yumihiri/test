@@ -123,3 +123,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # 学生生活マップ 固有設定
 # 国土地理院 AddressSearch API（住所 → 緯度経度）。APIキー不要・CORS許可済み。
 GSI_GEOCODE_URL = "https://msearch.gsi.go.jp/address-search/AddressSearch"
+
+# メール送信設定
+# 開発時はコンソールにメール内容を出力する（実際には送信しない）。
+# 本番運用時は環境変数でSMTP設定（EMAIL_HOST等）に差し替えること。
+EMAIL_BACKEND = os.environ.get(
+    "DJANGO_EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
+)
+DEFAULT_FROM_EMAIL = os.environ.get("DJANGO_DEFAULT_FROM_EMAIL", "noreply@student-map.local")

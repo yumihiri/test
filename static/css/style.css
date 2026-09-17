@@ -17,6 +17,9 @@ body{
   background:var(--bg); color:var(--ink); font-family:var(--font-body);
   display:flex; flex-direction:column; min-height:100vh;
 }
+a{color:var(--accent);}
+a:visited{color:var(--accent);}
+a:hover{color:var(--accent-hover);}
 .app-header{
   display:flex; align-items:center; justify-content:space-between; gap:12px;
   padding:10px 18px; background:var(--surface); border-bottom:1px solid var(--border); flex:0 0 auto;
@@ -87,6 +90,11 @@ body{
 .avg-rating{font-size:.85rem; margin-bottom:8px; color:var(--ink-soft);}
 .hint{font-size:.75rem; color:var(--accent-hover); background:var(--accent-soft); padding:8px 10px; border-radius:6px; margin-bottom:12px;}
 .error-text{font-size:.75rem; color:var(--danger); background:#F7DCDA; padding:8px 10px; border-radius:6px; margin-bottom:12px;}
+ul.errorlist{
+  list-style:none; color:var(--danger); background:#F7DCDA; font-size:.78rem;
+  margin:4px 0 0; padding:6px 10px; border-radius:6px; border:1px solid var(--danger);
+}
+ul.errorlist li::before{content:"⚠ ";}
 .mypage-row{border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:10px;}
 .mypage-row .name{font-weight:700; font-size:.88rem; margin-bottom:4px;}
 .messages{list-style:none; margin:0; padding:0;}
@@ -96,7 +104,6 @@ body{
 .auth-card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:32px; max-width:400px; width:100%;}
 .auth-card h1{font-family:var(--font-display); font-size:1.4rem; margin:0 0 18px;}
 .auth-card .helptext{font-size:.72rem; color:var(--ink-soft); margin-top:2px;}
-.auth-card ul.errorlist{color:var(--danger); font-size:.78rem; margin:2px 0 6px; padding-left:16px;}
 @media (max-width: 760px){
   .layout{flex-direction:column;}
   .sidebar{width:100%; border-right:none; border-bottom:1px solid var(--border); max-height:38vh;}

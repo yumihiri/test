@@ -1,5 +1,3 @@
-import json
-
 from django.test import TestCase
 from django.urls import reverse
 
@@ -11,13 +9,13 @@ from spots.models import Category, Spot
 class SpotFlowTests(TestCase):
     def setUp(self):
         self.business = User.objects.create_user(
-            username="biz", password="pass12345", role=User.Role.BUSINESS
+            username="biz", email="biz@example.com", password="pass12345", role=User.Role.BUSINESS
         )
         self.student = User.objects.create_user(
-            username="stu", password="pass12345", role=User.Role.STUDENT
+            username="stu", email="stu@example.com", password="pass12345", role=User.Role.STUDENT
         )
         self.admin = User.objects.create_user(
-            username="adm", password="pass12345", role=User.Role.ADMIN, is_staff=True
+            username="adm", email="adm@example.com", password="pass12345", role=User.Role.ADMIN, is_staff=True
         )
         self.food_category, _ = Category.objects.get_or_create(
             name="安い飯屋",
@@ -90,14 +88,14 @@ class SpotFlowTests(TestCase):
         )
         self.client.login(username="stu", password="pass12345")
         response = self.client.get(reverse("spots:map"))
-        payload = json.loads(response.context["spots_json"])
+        payload = response.context["spots"]
         self.assertNotIn(spot.id, [s["id"] for s in payload])
 
         # 管理者には見える
         self.client.logout()
         self.client.login(username="adm", password="pass12345")
         response = self.client.get(reverse("spots:map"))
-        payload = json.loads(response.context["spots_json"])
+        payload = response.context["spots"]
         self.assertIn(spot.id, [s["id"] for s in payload])
 
     def test_review_duplicate_blocked(self):

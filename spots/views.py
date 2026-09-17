@@ -1,8 +1,5 @@
-import json
-
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Avg
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
@@ -11,7 +8,7 @@ from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, ListView, TemplateView
 
 from .forms import SpotForm
-from .geocoding import GeocodingError, geocode_address
+from .geocoding import GeocodingError, geocode_address, reverse_geocode
 from .models import Category, Spot
 
 
@@ -56,8 +53,8 @@ class MapView(TemplateView):
             Category.objects.values("id", "name", "icon_class", "color")
         )
 
-        context["categories_json"] = json.dumps(categories, cls=DjangoJSONEncoder)
-        context["spots_json"] = json.dumps(spot_payload, cls=DjangoJSONEncoder)
+        context["categories"] = categories
+        context["spots"] = spot_payload
         return context
 
 
@@ -95,14 +92,6 @@ class SpotCreateView(LoginRequiredMixin, CreateView):
         kwargs["user"] = self.request.user
         return kwargs
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["categories_json"] = json.dumps(
-            list(context["form"].fields["category"].queryset.values("id", "name")),
-            cls=DjangoJSONEncoder,
-        )
-        return context
-
     def form_valid(self, form):
         form.instance.registered_by = self.request.user
         form.instance.status = Spot.Status.PENDING
@@ -130,3 +119,17 @@ def geocode_view(request):
     except GeocodingError as exc:
         return JsonResponse({"error": str(exc)}, status=422)
     return JsonResponse({"lat": lat, "lng": lng})
+
+
+@require_POST
+def reverse_geocode_view(request):
+    try:
+        lat = float(request.POST.get("lat", ""))
+        lng = float(request.POST.get("lng", ""))
+    except ValueError:
+        return JsonResponse({"error": "緯度・経度が不正です。"}, status=400)
+    try:
+        address = reverse_geocode(lat, lng)
+    except GeocodingError as exc:
+        return JsonResponse({"error": str(exc)}, status=422)
+    return JsonResponse({"address": address})

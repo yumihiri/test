@@ -29,3 +29,27 @@ def geocode_address(address):
     # GSI API は [経度, 緯度] の順で geometry.coordinates を返す
     lng, lat = results[0]["geometry"]["coordinates"]
     return lat, lng
+
+
+def reverse_geocode(lat, lng):
+    """緯度経度から市区町村レベルの住所文字列を返す。国土地理院 逆ジオコーディングAPI を利用。
+
+    番地までは取得できないため、あくまで下書き用の目安。ユーザーが登録前に編集できる前提。
+    見つからない場合や通信エラーの場合は GeocodingError を送出する。
+    """
+    try:
+        response = requests.get(
+            "https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress",
+            params={"lon": lng, "lat": lat},
+            timeout=5,
+        )
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        raise GeocodingError(f"逆ジオコーディングAPIへの接続に失敗しました: {exc}") from exc
+
+    data = response.json()
+    result = data.get("results")
+    municipality = result.get("lv01Nm") if result else None
+    if not municipality:
+        raise GeocodingError("この地点の住所を特定できませんでした。")
+    return municipality

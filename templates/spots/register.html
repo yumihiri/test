@@ -5,7 +5,7 @@
 <div class="layout">
   <section class="panel" style="width:380px; border-left:none; border-right:1px solid var(--border);">
     <h2>スポットを登録</h2>
-    <p class="hint">住所を入力して「住所から検索」を押すと地図上にピンが立ちます。位置がずれている場合は地図を直接クリックして調整してください。</p>
+    <p class="hint">住所が分かる場合は入力して「住所から検索」を押すとピンが立ちます。住所が分からない場合は、先に地図をクリックして位置を指定すれば住所欄に目安（市区町村まで）を自動入力します。番地などは登録前に手動で補ってください。</p>
 
     {% if form.non_field_errors %}
       <div class="error-text">{{ form.non_field_errors }}</div>
@@ -59,6 +59,7 @@
 <script>
   window.SPOT_REGISTER_CONFIG = {
     geocodeUrl: "{% url 'spots:geocode' %}",
+    reverseGeocodeUrl: "{% url 'spots:reverse_geocode' %}",
     csrfToken: "{{ csrf_token }}",
   };
 </script>

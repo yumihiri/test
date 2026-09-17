@@ -7,10 +7,10 @@
   const categoryOf = (id) => categories.find((c) => c.id === id);
 
   const map = L.map('map', { zoomControl: true }).setView(CENTER, 14);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    maxZoom: 20,
+  L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', {
+    maxZoom: 18,
     attribution:
-      '地図データ: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      '地図: <a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>',
   }).addTo(map);
 
   const markerLayer = L.layerGroup().addTo(map);
