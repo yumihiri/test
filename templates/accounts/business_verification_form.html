@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}承認申請 | 学生生活マップ{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h1>承認申請</h1>
+    <p class="desc" style="margin-bottom:16px;">
+      スポットを登録するには、経営者としての本人確認情報の提出が必要です。
+      内容は管理者が確認し、承認され次第スポット登録が可能になります（申請しても必ず承認されるとは限りません）。
+    </p>
+
+    {% if verification.status == 'rejected' %}
+      <div class="error-text">
+        前回の申請は却下されました。{% if verification.reject_reason %}理由: {{ verification.reject_reason }}{% endif %}
+        内容を修正して再度申請してください。
+      </div>
+    {% endif %}
+
+    {% if form.non_field_errors %}
+      <div class="error-text">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}（必須）</label>
+          {{ field }}
+          {% if field.help_text %}<div class="helptext">{{ field.help_text }}</div>{% endif %}
+          {{ field.errors }}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary" style="width:100%;">認証を申請</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

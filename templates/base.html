@@ -25,6 +25,8 @@
       <span class="role-badge">{{ user.get_role_display }}としてログイン中（{{ user.username }}）</span>
       {% if user.role == 'admin' %}
         <a class="btn" href="/admin/spots/spot/">承認一覧</a>
+      {% elif user.role == 'business' and not user.is_verified_business %}
+        <a class="btn btn-primary" href="{% url 'accounts:business_verification' %}">承認申請</a>
       {% else %}
         <a class="btn" href="{% url 'spots:register' %}">＋ スポットを登録</a>
         <a class="btn" href="{% url 'spots:mypage' %}">マイページ</a>

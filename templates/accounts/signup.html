@@ -4,6 +4,7 @@
 <div class="auth-wrap">
   <div class="auth-card">
     <h1>会員登録</h1>
+    <p class="hint">経営者として登録する場合、この後に本人確認情報（承認申請）の入力があります。承認されるまではスポットを登録できません。</p>
     <form method="post">
       {% csrf_token %}
       {% for field in form %}

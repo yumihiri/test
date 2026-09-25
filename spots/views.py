@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Avg
 from django.http import Http404, JsonResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView
@@ -87,6 +87,14 @@ class SpotCreateView(LoginRequiredMixin, CreateView):
     form_class = SpotForm
     template_name = "spots/register.html"
     success_url = reverse_lazy("spots:mypage")
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and request.user.role == "business" and not request.user.is_verified_business:
+            messages.error(
+                request, "スポットを登録するには経営者の本人確認（承認申請）が必要です。"
+            )
+            return redirect("accounts:business_verification")
+        return super().dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

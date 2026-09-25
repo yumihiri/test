@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}承認申請 | 学生生活マップ{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h1>承認申請</h1>
+    {% if verification.status == 'pending' %}
+      <span class="status-badge status-pending">審査中</span>
+      <p class="desc" style="margin-top:10px;">
+        「{{ verification.business_name }}」の承認申請を審査中です。承認されるとスポットの登録が可能になります。
+      </p>
+    {% elif verification.status == 'approved' %}
+      <span class="status-badge status-approved">認証済み</span>
+      <p class="desc" style="margin-top:10px;">
+        「{{ verification.business_name }}」の申請は承認されています。スポットを登録できます。
+      </p>
+      <a class="btn btn-primary" href="{% url 'spots:register' %}" style="margin-top:12px; display:inline-block;">＋ スポットを登録する</a>
+    {% endif %}
+    <p class="desc" style="margin-top:20px;"><a href="{% url 'spots:map' %}">← 地図に戻る</a></p>
+  </div>
+</div>
+{% endblock %}

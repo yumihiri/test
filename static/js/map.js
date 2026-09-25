@@ -3,6 +3,7 @@
   const categories = JSON.parse(document.getElementById('categories-data').textContent);
   const spots = JSON.parse(document.getElementById('spots-data').textContent);
   const activeCategories = new Set(categories.map((c) => c.id));
+  let searchQuery = '';
 
   const categoryOf = (id) => categories.find((c) => c.id === id);
 
@@ -27,27 +28,34 @@
     return '';
   }
 
+  function visibleSpots() {
+    const query = searchQuery.trim().toLowerCase();
+    return spots.filter((s) => {
+      if (!activeCategories.has(s.categoryId)) return false;
+      if (query && !s.name.toLowerCase().includes(query)) return false;
+      return true;
+    });
+  }
+
   function renderMarkers() {
     markerLayer.clearLayers();
-    spots
-      .filter((s) => activeCategories.has(s.categoryId))
-      .forEach((spot) => {
-        const cat = categoryOf(spot.categoryId);
-        if (!cat) return;
-        const cls = spot.status === 'pending' ? 'pending' : spot.status === 'rejected' ? 'rejected' : '';
-        const html = `<div class="spot-marker ${cls}" style="background:${cat.color}">${cat.icon_class}</div>`;
-        const marker = L.marker([spot.lat, spot.lng], {
-          icon: L.divIcon({ className: '', html, iconSize: [30, 30], iconAnchor: [15, 15] }),
-        });
-        const ratingText = spot.avgRating ? `★${spot.avgRating}（${spot.reviewCount}件）` : '評価なし';
-        marker.bindPopup(`
-          <strong>${cat.icon_class} ${escapeHtml(spot.name)}</strong><br>
-          ${statusLabel(spot.status)}
-          <div style="font-size:.8rem;margin:4px 0;">${ratingText}</div>
-          <a href="${spot.detailUrl}">詳細を見る →</a>
-        `);
-        marker.addTo(markerLayer);
+    visibleSpots().forEach((spot) => {
+      const cat = categoryOf(spot.categoryId);
+      if (!cat) return;
+      const cls = spot.status === 'pending' ? 'pending' : spot.status === 'rejected' ? 'rejected' : '';
+      const html = `<div class="spot-marker ${cls}" style="background:${cat.color}">${cat.icon_class}</div>`;
+      const marker = L.marker([spot.lat, spot.lng], {
+        icon: L.divIcon({ className: '', html, iconSize: [30, 30], iconAnchor: [15, 15] }),
       });
+      const ratingText = spot.avgRating ? `★${spot.avgRating}（${spot.reviewCount}件）` : '評価なし';
+      marker.bindPopup(`
+        <strong>${cat.icon_class} ${escapeHtml(spot.name)}</strong><br>
+        ${statusLabel(spot.status)}
+        <div style="font-size:.8rem;margin:4px 0;">${ratingText}</div>
+        <a href="${spot.detailUrl}">詳細を見る →</a>
+      `);
+      marker.addTo(markerLayer);
+    });
   }
 
   function renderSidebar() {
@@ -55,21 +63,34 @@
     el.innerHTML = categories
       .map(
         (c) => `
-      <li>
-        <input type="checkbox" checked data-cat="${c.id}">
-        <span class="cat-dot" style="background:${c.color}">${c.icon_class}</span> ${escapeHtml(c.name)}
+      <li data-cat-item="${c.id}">
+        <label>
+          <input type="checkbox" checked data-cat="${c.id}">
+          <span class="cat-dot" style="background:${c.color}">${c.icon_class}</span> ${escapeHtml(c.name)}
+        </label>
       </li>`
       )
       .join('');
     el.querySelectorAll('input[type=checkbox]').forEach((cb) => {
       cb.addEventListener('change', () => {
         const id = parseInt(cb.dataset.cat, 10);
-        if (cb.checked) activeCategories.add(id);
-        else activeCategories.delete(id);
+        const li = el.querySelector(`li[data-cat-item="${id}"]`);
+        if (cb.checked) {
+          activeCategories.add(id);
+          li.classList.remove('inactive');
+        } else {
+          activeCategories.delete(id);
+          li.classList.add('inactive');
+        }
         renderMarkers();
       });
     });
   }
+
+  document.getElementById('spot-search').addEventListener('input', (e) => {
+    searchQuery = e.target.value;
+    renderMarkers();
+  });
 
   renderSidebar();
   renderMarkers();

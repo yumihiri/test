@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% load static %}
 {% block content %}
-<div class="layout">
+<div class="layout map-layout">
+  <div id="map"></div>
   <aside class="sidebar" id="sidebar">
+    <input type="search" id="spot-search" class="map-search" placeholder="🔍 マップを検索する">
     <h2>カテゴリで絞り込み</h2>
     <ul class="cat-list" id="cat-list"></ul>
     <div class="legend">
@@ -11,7 +13,6 @@
       <div><span class="legend-swatch rejected" style="background:#999"></span>却下（本人・管理者のみ表示）</div>
     </div>
   </aside>
-  <div id="map"></div>
 </div>
 
 {{ categories|json_script:"categories-data" }}

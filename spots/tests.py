@@ -1,9 +1,22 @@
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
-from accounts.models import User
+from accounts.models import BusinessVerification, User
 from reviews.models import Comment
 from spots.models import Category, Spot
+
+
+def _verify(user, suffix):
+    BusinessVerification.objects.create(
+        user=user,
+        business_name=f"テスト事業者{suffix}",
+        representative_name="テスト太郎",
+        corporate_number=f"{suffix}" * 13,
+        contact_email=f"verify{suffix}@example.com",
+        id_document=SimpleUploadedFile("id.pdf", b"dummy", content_type="application/pdf"),
+        status=BusinessVerification.Status.APPROVED,
+    )
 
 
 class SpotFlowTests(TestCase):
@@ -11,6 +24,7 @@ class SpotFlowTests(TestCase):
         self.business = User.objects.create_user(
             username="biz", email="biz@example.com", password="pass12345", role=User.Role.BUSINESS
         )
+        _verify(self.business, "1")
         self.student = User.objects.create_user(
             username="stu", email="stu@example.com", password="pass12345", role=User.Role.STUDENT
         )
@@ -20,6 +34,7 @@ class SpotFlowTests(TestCase):
         self.other_business = User.objects.create_user(
             username="biz2", email="biz2@example.com", password="pass12345", role=User.Role.BUSINESS
         )
+        _verify(self.other_business, "2")
         self.food_category, _ = Category.objects.get_or_create(
             name="安い飯屋",
             defaults={"icon_class": "🍜", "color": "#D97706", "student_registrable": False},

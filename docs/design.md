@@ -250,3 +250,36 @@ erDiagram
 | 現在地からの距離ソート | 追加テーブル不要 | ブラウザのGeolocation APIで現在地を取得し、`latitude`/`longitude`を使ってJavaScript側で距離計算・並び替え（サーバー側で行う場合はDjangoのGeoDjango拡張も選択肢） |
 
 初期実装ではこれらは対象外とし、コア機能（地図表示・登録・承認・評価）の完成を優先する。
+
+## 8. 実装後の変更履歴（初版からの差分）
+
+本実装を進める中で、初版の設計から以下の変更・追加を行った。詳細な理由は`README.md`も参照。
+
+| 項目 | 初版の設計 | 実装での変更 | 理由 |
+|---|---|---|---|
+| ジオコーディングAPI | Nominatim | 国土地理院 AddressSearch API（住所→緯度経度）＋ 逆ジオコーディングAPI（緯度経度→市区町村） | 水戸市内住所への精度・APIキー不要・CORS許可済みという2章の比較検討結果を採用。加えて、地図クリックのみでもおおよその住所を自動入力できるよう逆ジオコーディングを追加 |
+| 地図タイル | Leaflet.js + OpenStreetMap公式タイル | Leaflet.js + 国土地理院 標準地図タイル | OSM公式タイルサーバーの利用ポリシー（Referer検証等）により環境依存で403ブロックが発生したため。日本語表記になる副次効果もあり |
+| 経営者不在カテゴリの登録者 | 要検討 | 学生ロールでも登録可能（`Category.student_registrable`でフォームの選択肢を制御） | ATM・トイレ・駐輪場・バス停・コインランドリー・無料Wi-Fi・自販機が対象 |
+| レビューの重複投稿 | 要相談 | `unique_together(user, spot)`で1スポットにつき1ユーザー1件に制限 | 平均評価の偏りを防止 |
+| **経営者の本人確認（承認申請）** | なし（会員登録時にロールを選ぶのみ） | `accounts.BusinessVerification`テーブルを追加。経営者として会員登録すると、事業者名・代表者名・法人番号・連絡先メールアドレス・本人確認書類の提出（承認申請）が必須になり、管理者が承認するまでスポット登録ができない | なりすまし・いたずら目的の経営者アカウント登録を防ぐため |
+| スポットの削除 | なし（承認・却下のみ） | 経営者は自分が登録したスポットのみ、管理者はすべてのスポットを削除可能 | 誤登録の取り消し・不要スポットの整理のため |
+| パスワードリセット | 初期実装では対象外 | Django標準の`PasswordResetView`系を追加（開発時はメールをコンソール出力） | 運用上の必要性から前倒しで対応 |
+| カテゴリ | 12種類（安い飯屋・勉強できる場所・印刷できる場所・ATM・トイレ・コンセントがある店・駐輪場・バス停・コインランドリー・古本屋・深夜営業店・無料Wi-Fi） | 「自販機」を追加（学生も登録可） | - |
+| 画面デザイン | Bootstrap 5想定 | 素のCSS（デザイントークン方式）で、地図いっぱいに表示し検索バー・カテゴリ一覧をカード状に浮かせるモバイル的なUIに変更 | 見た目の刷新要望に対応 |
+
+### 8-1. BusinessVerification（accounts.BusinessVerification）
+
+| カラム名 | 型 | 制約 | 説明 |
+|---|---|---|---|
+| id | AutoField | PK | |
+| user | OneToOneField(User) | on_delete=CASCADE | 申請者（経営者ロールのユーザー） |
+| business_name | CharField(100) | — | 事業者名 |
+| representative_name | CharField(100) | — | 代表者名 |
+| corporate_number | CharField(13) | 13桁の数字のみ | 法人番号 |
+| contact_email | EmailField | — | 連絡先メールアドレス（ログイン用メールとは別に指定可） |
+| id_document | FileField | — | 本人確認書類 |
+| status | CharField(10) | choices=['pending','approved','rejected'], default='pending' | 審査状態 |
+| reject_reason | TextField | blank=True | 却下理由 |
+| created_at / updated_at | DateTimeField | auto_now_add / auto_now | |
+
+> 経営者ロールのユーザーがスポットを登録できるのは、対応する`BusinessVerification.status`が`approved`の場合のみ（`User.is_verified_business`プロパティで判定）。
